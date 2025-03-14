@@ -45,10 +45,8 @@ Note: If you find any bugs, try to fix them and write about them in your documen
 
 from localization import Localization
 from planning import Planner
-from map_merger import MapMerger
-import math
-import pygame
 import random
+import pygame
 
 class Pipeline:
 	def __init__(self, world_width, world_height, surface, agent1, agent2):
@@ -59,19 +57,21 @@ class Pipeline:
 
 		self.world_width = world_width
 		self.world_height = world_height
+		self.surface = surface
 
 		self.explored_map1 = Localization(world_width, world_height, self.__map_data1) # map explored by agent 1
 		self.explored_map2 = Localization(world_width, world_height, self.__map_data2) # map explored by agent 2
-		self.planner = Planner() # gets the path once the map has been finalized
-		self.map_merger = MapMerger(world_width, world_height)
+		self.planner = Planner(self.__map_data1, world_width, world_height) # gets the path once the map has been finalized
 
 		self.pos1 = self.explored_map1.get_estimated_pos()
 		self.pos2 = self.explored_map2.get_estimated_pos()
 
+		self.path = None
+
 		self.__steps_moved = 0
 		self.__max_steps = 20
-		self.__min_step_size =5
-		self.__max_step_size = 20
+		self.__min_step_size = 10
+		self.__max_step_size = 30
 
 
 	def reset(self):
@@ -98,12 +98,19 @@ class Pipeline:
 
 			self.__steps_moved += 1
 
-		else:
-			print(agent1.get_pos(), agent2.get_pos())
-			print(self.pos1, self.pos2)
+			print(self.__steps_moved)
 
-			import time
-			time.sleep(15)
+		else:
+
+			if not self.path: 
+				print(agent1.get_pos(), agent2.get_pos())
+				print(self.pos1, self.pos2)
+
+				self.path = self.planner.get_path(self.pos1, self.pos2 )
+				print(self.path)
+
+				for i in range(1, len(self.path)):
+					pygame.draw.line(self.surface, (255, 0, 0), self.path[i - 1], self.path[i])
 
 	def move_agent(self, agent):
 		dl = random.randrange(self.__min_step_size, self.__max_step_size + 1)

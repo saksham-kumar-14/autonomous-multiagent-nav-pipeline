@@ -51,10 +51,8 @@ class Localization:
             x, y = self.particles[i]
             simulated_lidar = self.simulate_lidar(x, y, angle)
             print("lidar data : ", lidar_data)
-            print("simulated data : ", simulated_lidar)
+            print("simulated lidar data : ", simulated_lidar)
             weights[i] = np.exp(-np.sum((simulated_lidar - lidar_data) ** 2) / 1e7)
-            print("kpows : ", np.sum((simulated_lidar - lidar_data) ** 2) / 1e7 )
-            print("ks : ", np.sum((simulated_lidar - lidar_data) ** 2) / 1e7 )
 
         print("weigths : ", weights)
         weights /= np.sum(weights) # Normalize weights
