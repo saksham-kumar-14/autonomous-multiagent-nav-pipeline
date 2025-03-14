@@ -47,74 +47,68 @@ from localization import Localization
 from planning import Planner
 from map_merger import MapMerger
 import math
+import pygame
+import random
 
 class Pipeline:
-	def __init__(self, world_width, world_height, surface):
+	def __init__(self, world_width, world_height, surface, agent1, agent2):
 		# initial position will have to be assumed to be (world_width, world_height)
-		self.explored_map1 = Localization(2 * world_width, 2 * world_height) # map explored by agent 1
-		self.explored_map2 = Localization(2 * world_width, 2 * world_height) # map explored by agent 2
-		self.planner = Planner(world_width, world_height) # gets the path once the map has been finalized
-		self.map_merger = MapMerger(2 * world_width, 2 * world_height)
-		self.surface = surface
-		
-		self.path1, self.path2 = None, None
 
-		self.world_height = world_height
+		self.__map_data1 = agent1.get_world()
+		self.__map_data2 = agent2.get_world()
+
 		self.world_width = world_width
+		self.world_height = world_height
+
+		self.explored_map1 = Localization(world_width, world_height, self.__map_data1) # map explored by agent 1
+		self.explored_map2 = Localization(world_width, world_height, self.__map_data2) # map explored by agent 2
+		self.planner = Planner() # gets the path once the map has been finalized
+		self.map_merger = MapMerger(world_width, world_height)
+
+		self.pos1 = self.explored_map1.get_estimated_pos()
+		self.pos2 = self.explored_map2.get_estimated_pos()
+
+		self.__steps_moved = 0
+		self.__max_steps = 20
+		self.__min_step_size =5
+		self.__max_step_size = 20
+
 
 	def reset(self):
-		self.explored_map1 = Localization(2 * self.world_width, 2 * self.world_height) # map explored by agent 1
-		self.explored_map2 = Localization(2 * self.world_width, 2 * self.world_height) # map explored by agent 2
-		self.path1 = None
-		self.path2 = None
+		self.explored_map1 = Localization(self.world_width, self.world_height, self.__map_data1) # map explored by agent 1
+		self.explored_map2 = Localization(self.world_width, self.world_height, self.__map_data2) # map explored by agent 2
+		self.pos1 = self.explored_map1.get_estimated_pos()
+		self.pos2 = self.explored_map2.get_estimated_pos()
 
 
 	def work(self, agent1, agent2):
 
-		self.explored_map1.update(agent1)
-		self.explored_map2.update(agent2)
+		if self.__steps_moved < self.__max_steps:
+			agent1_motion = self.move_agent(agent1)
+			agent2_motion = self.move_agent(agent2)
 
-		# Extracting the local maps
-		map1 = self.explored_map1.map.copy()
-		map2 = self.explored_map2.map.copy()
+			self.explored_map1.move_particles(agent1_motion)
+			self.explored_map1.update(agent1)
 
-		# Merging the maps
-		merged_map = self.map_merger.merge_maps(map1, map2)
+			self.explored_map2.move_particles(agent2_motion)
+			self.explored_map2.update(agent2)
 
-		self.surface.blit(merged_map, (0, 0))
+			self.pos1 = self.explored_map1.get_estimated_pos()
+			self.pos2 = self.explored_map2.get_estimated_pos()
 
-		# get agent positions
-		# pos1 = agent1.get_pos()
-		# pos2 = agent2.get_pos()
+			self.__steps_moved += 1
 
-		# deciding the meeting point
-		# meet_x = (pos1[0] + pos2[0]) // 2
-		# meet_y = (pos1[1] + pos2[1]) // 2
-		# meeting_point = (meet_x, meet_y)
+		else:
+			print(agent1.get_pos(), agent2.get_pos())
+			print(self.pos1, self.pos2)
 
-		# generating paths
-		# self.path1 = self.planner.get_path(merged_map, (pos1[0], pos1[1]), meeting_point)
-		# self.path2 = self.planner.get_path(merged_map, (pos1[0], pos1[1]), meeting_point)
+			import time
+			time.sleep(15)
 
-		# print('path 1 : ', self.path1)
-		# print('path 2 : ', self.path2)
+	def move_agent(self, agent):
+		dl = random.randrange(self.__min_step_size, self.__max_step_size + 1)
+		dtheta = random.uniform(0, 360)
+		agent.rotate(dtheta)
+		agent.move(dl)
 
-		# # Move agents through the planned path
-		# self.move_agent(agent1, self.path1)
-		# self.move_agent(agent2, self.path2)
-
-	def move_agent(self, agent, path):
-
-		step_size = 3
-
-		for i in path:
-			agent.move(step_size)
-			pos = agent.get_pos()
-			rotate_angle = math.atan((i[1] - pos[1]) / (i[0] - pos[0]))
-			rotate_angle = math.degrees(rotate_angle)
-			agent.rotate(rotate_angle)
-
-        
-
-		
-
+		return dl, dtheta

@@ -58,7 +58,7 @@ def main():
     agent2 = RobotAPI(world_width, world_height, shared_world, start_pos=[world_width * 0.3, world_height * 0.3])
 
     # Create a class instance for the pipeline
-    pipeline = Pipeline(world_height, world_width, shared_world)
+    pipeline = Pipeline(world_height, world_width, shared_world, agent1, agent2)
 
     # Create an explored map surface for pipeline mode.
     explored_surface = pygame.Surface((world_width, world_height))

@@ -1,56 +1,108 @@
 import pygame
+import random
+import numpy as np
 import math
 
 WHITE = (255, 255, 255)
+BROWN = (181, 101, 29)
 
 class Localization:
-    def __init__(self, world_width, world_height):
-        self.map = pygame.Surface((world_width, world_height)) 
-        self.map.fill((0, 0, 0))
-        self.__world_height = world_height
-        self.__world_width = world_width
+    def __init__(self, world_width, world_height, map_data, num_particles = 150):
+        self.world_width = world_width
+        self.world_height = world_height
+        self.num_particles = num_particles
+        self.map_data = map_data
+        self.particles = self.initialize_particles()
 
-        # # random guess about the agent's position (x, y, angle)
-        # self.position = [0, 0, 0]
+    def initialize_particles(self):
+        particles = []
+        for i in range(self.num_particles):
+            pos = (random.randrange(0, self.world_width), random.randrange(0, self.world_height))
+            while self.map_data.get_at(pos) == BROWN:
+                pos = (random.randrange(0, self.world_width), random.randrange(0, self.world_height))
+            
+            particles.append(pos)
+        
+        return particles
+    
+    def move_particles(self, agent_motion):
+        """
+        Move particles based on the motion of the agent
+        """
+        dl, theta = agent_motion
+        dx = dl * math.cos(theta)
+        dy = dl * math.sin(theta)
 
-        self.position = None
+        for i in range(self.num_particles):
+            new_x = int(self.particles[i][0] + dx)
+            new_y = int(self.particles[i][1] + dy)
+            if 0 < new_x < self.world_width and 0 < new_y < self.world_height and self.map_data.get_at((new_x, new_y)) == WHITE:
+                self.particles[i] = (new_x, new_y)
 
     def update(self, agent):
+        """
+        Update particle weights based on lidar readings
+        """
+        lidar_data = agent.scan()
+        weights = np.zeros(self.num_particles)
+        angle = agent.get_imu_data()
 
-        agent_angle = agent.get_imu_data() # angle of the agent
+        for i in range(self.num_particles):
+            x, y = self.particles[i]
+            simulated_lidar = self.simulate_lidar(x, y, angle)
+            print("lidar data : ", lidar_data)
+            print("simulated data : ", simulated_lidar)
+            weights[i] = np.exp(-np.sum((simulated_lidar - lidar_data) ** 2) / 1e7)
+            print("kpows : ", np.sum((simulated_lidar - lidar_data) ** 2) / 1e7 )
+            print("ks : ", np.sum((simulated_lidar - lidar_data) ** 2) / 1e7 )
 
-        lidar_readings = agent.scan() # gets the lidar readings
-        
-        if self.position == None:
-            self.position = agent.get_pos()
+        print("weigths : ", weights)
+        weights /= np.sum(weights) # Normalize weights
+        self.resample(weights)
 
-        for distance in lidar_readings:
-            if distance > 0:
-                rad_angle = math.radians(agent_angle)
+    def resample(self, weights):
+        """
+        Resamples particles based on their weights
+        """
+        new_particles = []
+        idxs = np.random.choice(self.num_particles, size = self.num_particles, p = weights)
+        for i in idxs:
+            new_particles.append(self.particles[i])
 
-                obs_x = int(self.position[0] + (distance * math.cos(rad_angle)))
-                obs_y = int(self.position[1] + (distance * math.sin(rad_angle)))
+        self.particles = new_particles
 
-                self.map.set_at((obs_x, obs_y), WHITE) # Set an obstacle at this position
-
-            agent_angle += 2
-
-        # for i in range(0, 360, 2):
-        #     distance = lidar_readings[i//2]
-        #     if distance > 0:
-        #         rad_angle = math.radians(i)
-        #         obstacle_x, obstacle_y = distance * math.cos(agent_angle + rad_angle), distance * math.sin(agent_angle + rad_angle)
-
-        #         obstacle_x = int(obstacle_x)
-        #         obstacle_y = int(obstacle_y)
-                
-        #         self.map.set_at((obstacle_x, obstacle_y), WHITE) # Set an obstacle at this position
-
-    def get_pos(self):
-        return self.position
-
+    def get_estimated_pos(self):
+        """
+        Returns mean of the particles as the estimated agent's position
+        """
+        return np.mean(self.particles, axis = 0).astype(int)
 
     
-    def at(self, x, y):
-        return self.map.get_at((int(x), int(y)))
+    def simulate_lidar(self, x, y, angle, fov = 360, resolution = 2):
+
+        num_rays = int(fov / resolution)
+        start_angle = angle - fov / 2.0
+        measurements = []
+        for i in range(num_rays):
+            ray_angle = start_angle + i * resolution
+            ray_angle_rad = math.radians(ray_angle)
+            d = self.__raycast(x, y, ray_angle_rad)
+            measurements.append(d)
+        
+        return np.array(measurements)
+    
+    def __raycast(self, x, y, angle_rad):
+        step = 1.0
+        distance = 0.0
+
+        while distance < self.world_width:
+            test_x = x + distance * math.cos(angle_rad)
+            test_y = y + distance * math.sin(angle_rad)
+            ix, iy = int(test_x), int(test_y)
+            if ix < 0 or iy < 0 or ix >= self.world_width or iy >= self.world_height:
+                return self.world_width
+            if self.map_data.get_at((ix, iy))[:3] == BROWN:
+                return distance
+            distance += step
+        return self.world_width
 
