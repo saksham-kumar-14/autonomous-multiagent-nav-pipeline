@@ -6,6 +6,8 @@ import math
 WHITE = (255, 255, 255)
 BROWN = (181, 101, 29)
 
+# Particle filtering is used for determining the location of agents given the world map
+
 class Localization:
     def __init__(self, world_width, world_height, map_data, num_particles = 150):
         self.world_width = world_width
@@ -14,7 +16,7 @@ class Localization:
         self.map_data = map_data
         self.particles = self.initialize_particles()
 
-    def initialize_particles(self):
+    def initialize_particles(self):  # randomly intializing particles all over the map
         particles = []
         for i in range(self.num_particles):
             pos = (random.randrange(0, self.world_width), random.randrange(0, self.world_height))
@@ -52,7 +54,7 @@ class Localization:
             simulated_lidar = self.simulate_lidar(x, y, angle)
             print("lidar data : ", lidar_data)
             print("simulated lidar data : ", simulated_lidar)
-            weights[i] = np.exp(-np.sum((simulated_lidar - lidar_data) ** 2) / 1e7)
+            weights[i] = np.exp(-np.sum((simulated_lidar - lidar_data) ** 2) / 1e7) # weights based on the simulated reading the actual lidar readings for each particle
 
         print("weigths : ", weights)
         weights /= np.sum(weights) # Normalize weights
@@ -64,8 +66,21 @@ class Localization:
         """
         new_particles = []
         idxs = np.random.choice(self.num_particles, size = self.num_particles, p = weights)
-        for i in idxs:
-            new_particles.append(self.particles[i])
+        noise = 40
+
+        i = 0
+        while len(new_particles) < self.num_particles:
+            new_particles.append(self.particles[idxs[i]])
+
+            # randomly assigning new particles around the above index
+            num_more_particles = random.randrange(0, 11)
+            for _ in range(num_more_particles):
+                x = random.randrange(self.particles[idxs[i]][0] - noise, self.particles[idxs[i]][0] + noise)
+                y = random.randrange(self.particles[idxs[i]][1] - noise, self.particles[idxs[i]][1] + noise)
+                new_particles.append((x, y))
+            
+            i += 1
+
 
         self.particles = new_particles
 
@@ -76,7 +91,7 @@ class Localization:
         return np.mean(self.particles, axis = 0).astype(int)
 
     
-    def simulate_lidar(self, x, y, angle, fov = 360, resolution = 2):
+    def simulate_lidar(self, x, y, angle, fov = 360, resolution = 2):  # for simulating lidar same as that of robot_api.py
 
         num_rays = int(fov / resolution)
         start_angle = angle - fov / 2.0
@@ -89,7 +104,7 @@ class Localization:
         
         return np.array(measurements)
     
-    def __raycast(self, x, y, angle_rad):
+    def __raycast(self, x, y, angle_rad):  # for simulating lidar same as that of robot_api.py
         step = 1.0
         distance = 0.0
 

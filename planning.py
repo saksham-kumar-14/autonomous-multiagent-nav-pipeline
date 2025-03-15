@@ -17,7 +17,7 @@ class Planner:
         goal = tuple(goal)
 
         directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
-        open_set = []
+        open_set = []  # Stores the node to be evaluated
         came_from = {}  # Stores the parent nodes
         heapq.heappush(open_set, (0, start))
         cost = {start: 0}
@@ -37,7 +37,7 @@ class Planner:
 
                         if neighbor not in cost or new_cost < cost[neighbor]:
                             cost[neighbor] = new_cost
-                            priority = new_cost + self.heuristic(neighbor, goal)
+                            priority = new_cost + self.heuristic(neighbor, goal) # cost = heuristic + actual cost from beginning to end
                             heapq.heappush(open_set, (priority, neighbor))
                             came_from[neighbor] = current
 

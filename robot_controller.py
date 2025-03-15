@@ -190,7 +190,7 @@ def main():
             for agent in [agent1, agent2]:
                 agent.update_explored(explored_surface)
             pipeline.work(agent1, agent2)
-        else: pipeline.reset()
+        else: pipeline.reset(agent1, agent2)
 
         # --- Drawing Section ---
         screen.fill((128, 128, 128))

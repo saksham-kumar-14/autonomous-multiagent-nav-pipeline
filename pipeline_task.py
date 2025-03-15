@@ -50,49 +50,61 @@ import pygame
 
 class Pipeline:
 	def __init__(self, world_width, world_height, surface, agent1, agent2):
-		# initial position will have to be assumed to be (world_width, world_height)
 
+		# map data for agents
 		self.__map_data1 = agent1.get_world()
 		self.__map_data2 = agent2.get_world()
 
-		self.world_width = world_width
-		self.world_height = world_height
+		self.__world_width = world_width
+		self.__world_height = world_height
 		self.surface = surface
 
 		self.explored_map1 = Localization(world_width, world_height, self.__map_data1) # map explored by agent 1
 		self.explored_map2 = Localization(world_width, world_height, self.__map_data2) # map explored by agent 2
 		self.planner = Planner(self.__map_data1, world_width, world_height) # gets the path once the map has been finalized
 
+		# random guess for the initial positions
 		self.pos1 = self.explored_map1.get_estimated_pos()
 		self.pos2 = self.explored_map2.get_estimated_pos()
 
+		# connecting path
 		self.path = None
 
+		# other variables regarding the movement of agents
 		self.__steps_moved = 0
 		self.__max_steps = 20
 		self.__min_step_size = 10
 		self.__max_step_size = 30
 
 
-	def reset(self):
-		self.explored_map1 = Localization(self.world_width, self.world_height, self.__map_data1) # map explored by agent 1
-		self.explored_map2 = Localization(self.world_width, self.world_height, self.__map_data2) # map explored by agent 2
+	def reset(self, agent1, agent2):
+
+		self.__map_data1 = agent1.get_world()
+		self.__map_data2 = agent2.get_world()
+
+		self.explored_map1 = Localization(self.__world_width, self.__world_height, self.__map_data1) # map explored by agent 1
+		self.explored_map2 = Localization(self.__world_width, self.__world_height, self.__map_data2) # map explored by agent 2
 		self.pos1 = self.explored_map1.get_estimated_pos()
 		self.pos2 = self.explored_map2.get_estimated_pos()
+		self.path = None
 
 
 	def work(self, agent1, agent2):
 
 		if self.__steps_moved < self.__max_steps:
+			
+			# making the agent do some motion to determine the surrounding map
 			agent1_motion = self.move_agent(agent1)
 			agent2_motion = self.move_agent(agent2)
 
+			# moving the randomly initialized particle and updating their weights
 			self.explored_map1.move_particles(agent1_motion)
 			self.explored_map1.update(agent1)
-
+			
 			self.explored_map2.move_particles(agent2_motion)
 			self.explored_map2.update(agent2)
 
+			# estimated new position
 			self.pos1 = self.explored_map1.get_estimated_pos()
 			self.pos2 = self.explored_map2.get_estimated_pos()
 
@@ -103,16 +115,20 @@ class Pipeline:
 		else:
 
 			if not self.path: 
-				print(agent1.get_pos(), agent2.get_pos())
-				print(self.pos1, self.pos2)
+				print(agent1.get_pos(), agent2.get_pos()) # can be used only once! real locations
+				print(self.pos1, self.pos2) # estimated locations
 
-				self.path = self.planner.get_path(self.pos1, self.pos2 )
+				self.path = self.planner.get_path(self.pos1, self.pos2 ) # apply astar to make path between the two estimated locations for both agents
 				print(self.path)
 
-				for i in range(1, len(self.path)):
+				if len(self.path) == 0:
+					print("Agent cannot meet each other")
+
+				for i in range(1, len(self.path)):  # drawing the path
 					pygame.draw.line(self.surface, (255, 0, 0), self.path[i - 1], self.path[i])
 
-	def move_agent(self, agent):
+	
+	def move_agent(self, agent):  # making random movement for the agent
 		dl = random.randrange(self.__min_step_size, self.__max_step_size + 1)
 		dtheta = random.uniform(0, 360)
 		agent.rotate(dtheta)
