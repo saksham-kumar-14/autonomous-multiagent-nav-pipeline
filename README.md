@@ -20,7 +20,6 @@ Initially only ** the world map and lidar readings ** of 2 agents are given usin
 - Due the time it takes, the number of particles initialized are set to be 150, accuracy of prediction can be improved by increasing the number of particles.
 
 > These are some the results on the following maps
-![Predition 1](./assets/p1.png)
-![Predition 2](./assets/p2.png)
-![Predition 3](./assets/p3.png)
-![Predition 3](./assets/p4.png)
+![Prediction 1](./assets/p1.png)
+![Prediction 2](./assets/p2.png)
+![Prediction 3](./assets/p3.png)

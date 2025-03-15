@@ -16,7 +16,16 @@ class Planner:
         start = tuple(start)
         goal = tuple(goal)
 
-        directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+        directions = [
+                (-1, 0),
+                (1, 0),
+                (0, -1),
+                (0, 1),
+                (1, 1),
+                (1, -1),
+                (-1, 1),
+                (-1, -1)
+            ]
         open_set = []  # Stores the node to be evaluated
         came_from = {}  # Stores the parent nodes
         heapq.heappush(open_set, (0, start))

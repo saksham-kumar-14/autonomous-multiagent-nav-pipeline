@@ -73,8 +73,8 @@ class Pipeline:
 		# other variables regarding the movement of agents
 		self.__steps_moved = 0
 		self.__max_steps = 20
-		self.__min_step_size = 10
-		self.__max_step_size = 30
+		self.__min_step_size = 5
+		self.__max_step_size = 20
 
 
 	def reset(self, agent1, agent2):
@@ -87,6 +87,7 @@ class Pipeline:
 		self.pos1 = self.explored_map1.get_estimated_pos()
 		self.pos2 = self.explored_map2.get_estimated_pos()
 		self.path = None
+		self.__steps_moved = 0
 
 
 	def work(self, agent1, agent2):
