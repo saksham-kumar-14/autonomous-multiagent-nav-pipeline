@@ -1,3 +1,13 @@
+import os
+
+# Set DISPLAY if not already set
+if "DISPLAY" not in os.environ:
+    os.environ["DISPLAY"] = ":99"  # Use a different display
+
+# Start Xvfb only if it's not running
+os.system("Xvfb :99 -screen 0 1024x768x16 &")
+
+###############################################################
 import pygame
 import sys
 import math
